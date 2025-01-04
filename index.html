@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="./css/styles.css">
+  </head>
+  <body>
+    <svg id="svg1" width="400" height="800"></svg>
+    <svg id="svg2" width="400" height="800"></svg>
+    </br>
+    <div id="inputArea">
+    <input type="range" min="1" max="500" value="100" class="slider" id="dataSlider">
+    </br>
+    <select id="data-selection">
+      <option value="winner">Most followed users</option>
+      <option value="earlybird">Earliest users</option>
+    </select>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="./js/index.js" type="module">
+    </script>
+  </body>
+</html>
