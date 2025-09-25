@@ -3,7 +3,7 @@ import { colourbar } from "./colourbar.js"
 let simulation = d3.forceSimulation()
 
 let nodeSize = 0.04
-
+const tooltipPadding = 15;
 const minimumNodeSize = 2
 
 let barWidth = 300
@@ -11,7 +11,6 @@ let barWidth = 300
 
 function drag(simulation) {    
   function dragstarted(event) {
-    console.log(event.subject)
     if (!event.active) simulation.alphaTarget(0.3).restart();
     event.subject.fx = event.subject.x;
     event.subject.fy = event.subject.y;
@@ -36,11 +35,12 @@ function drag(simulation) {
 }
 
 
-
+// The three functions below execute in different contexts and require slightly different handling of the data
+// However, they do basically do the same thing
+// If I had time to refactor the code, this would be the main priority.
 
 export function initForceDiagram(parent, props) {
 
-    console.log(parent)
     const {fullData, 
         getSelectedNode,
       setSelectedNode,
@@ -51,43 +51,22 @@ export function initForceDiagram(parent, props) {
       colourValue
     } = props
     
-    /* 
-    let minVal = Math.min(...fullData.winnerNodes.map(colourValue))
-    let maxVal = Math.max(...fullData.winnerNodes.map(colourValue))
-    const colourScale = d3.scaleSequential()
-    .domain([minVal, maxVal])
-    .interpolator(d3.interpolateViridis);*/
-
-
-    console.log("colour scale")
-    console.log(fullData.winnerNodes.map(colourValue))
-    console.log(colourScale.domain())
-    
-    
-    
     
         let winnerNodes = fullData.winnerNodes
         let winnerLinks = fullData.winnerLinks
         
+        // Compute dimensions of screen
         const compHeight = parent.node().getBoundingClientRect().height
         const compWidth = parent.node().getBoundingClientRect().width
 
         let maxNodeSize = winnerNodes.map(d=> d.inGraphFollowsNum + d.outGraphFollows).reduce((a, b) => Math.max(a, b), -Infinity);
         nodeSize = 36/ Math.sqrt(maxNodeSize)
     
-        //console.log(compHeight)
-        //console.log(compWidth)
-    
-        //console.log(winnerNodes)
-        //console.log(winnerLinks)
-    
-        
-    
-    
         const chart = parent.selectAll('mainChart').data([null])
         .join('g')
         .attr('class', 'mainChart')
         
+        // Set up simulation
         simulation
         .force('link',   d3.forceLink().id(d => d.id))
         .force('charge', d3.forceManyBody().strength(-70))
@@ -95,60 +74,28 @@ export function initForceDiagram(parent, props) {
     
         simulation.nodes(winnerNodes);
         simulation.force('link').links(winnerLinks);
-        console.log(simulation)
-      
-        // Colour scale
-        //const colorScale = d3.scaleOrdinal(d3.schemePaired)
-        //  .domain(data.nodes.map(d => d.group));
+
+        // Set up event listeners
         const clickNode = (event) => {
           setSelectedNode(event.target.id)
-          //console.log(event.target.id)
         }
         const mouseoverNode = (event) => {
           let currentHover = getHoveredNode()
             if(currentHover != event.target.id) {
                 setHoveredNode(event.target.id)
             }
-          //console.log(selectedNode)
-          /*
-          chart.selectAll('circle').data(winnerNodes)
-          .join('circle')
-            .attr('stroke', d=> {
-              if(d.id == selectedNode) {return('white')}
-              else {return('None')}
-          })
-          chart.selectAll('line').data(winnerLinks)
-          .join('line')
-          .attr('opacity', d=> {
-              if(d.source.id == selectedNode || d.target.id == selectedNode) {return(1)}
-              else {return(0.1)}
-          })
-          .attr('stroke', d=> {
-              if(d.source.id == selectedNode || d.target.id == selectedNode) {return('#0F0')}
-              else {return('#000')}
-          })
-            */
+            d3.select('#tooltip')
+            .style('display', 'block')
+            .style('left', (event.pageX + tooltipPadding) + 'px')   
+            .style('top', (event.pageY + tooltipPadding) + 'px')
+            .html(`
+              <div class="tooltip-title"> User: ${event.target.id}</div>
+              `);
       }
       
       const mouseoutNode = (event) => {
         setHoveredNode(null)
-          /*chart.selectAll('circle').data(winnerNodes)
-          .join('circle')
-            .attr('stroke', d=> {
-              if(d.id == selectedNode) {return('white')}
-              else {return('None')}
-          })
-          chart.selectAll('line').data(winnerLinks)
-          .join('line')
-          .attr('opacity', d=> {
-              if(d.source.id == selectedNode || d.target.id == selectedNode) {return(1)}
-              else {return(0.1)}
-          })
-          .attr('stroke', d=> {
-              if(d.source.id == selectedNode || d.target.id == selectedNode) {return('#0F0')}
-              else {return('#000')}
-          })
-              */
+        d3.select('#tooltip').style('display', 'none');
       }
     
         // Append links
@@ -175,15 +122,11 @@ export function initForceDiagram(parent, props) {
                 }
               })
               .attr('stroke', d=> {
-                if(d.id == getHoveredNode()) {
-                  console.log(d.id)
-                  console.log(colourValue(d))
-                  return('white')}
+                if(d.id == getHoveredNode()) { return('white') }
                 if (d.id == getSelectedNode() && getSelectedNode() != null) {return('aqua')}
                 else {return('black')}
             })
               .attr('id', d=>{
-                //console.log(d)
                 return(d.id)})
               .on('mouseover', mouseoverNode)
               .on('mouseout', mouseoutNode)
@@ -202,14 +145,13 @@ export function initForceDiagram(parent, props) {
               .attr('cy', d => d.y);
         });
 
-        chart.call(d3.zoom()
+        // Z O O M 
+        parent.call(d3.zoom()
         .scaleExtent([0, 8])
         .translateExtent([[0, 0], [compWidth, compHeight]])
         .on('zoom', event => chart.attr('transform', event.transform)));
-    /* */
-
     
-
+    // Add legend
     parent.call(colourbar, {
       colourScale,
       nTicks: 4,
@@ -224,7 +166,6 @@ export function initForceDiagram(parent, props) {
     
 export function updateForceDiagram(parent, props) {
 
-  //console.log(parent)
   const {fullData, 
     getSelectedNode,
     setSelectedNode,
@@ -235,27 +176,20 @@ export function updateForceDiagram(parent, props) {
     colourValue
   } = props
 
-
+  // Get the nodes and links from the data
   let winnerNodes = fullData.winnerNodes
-        let winnerLinks = fullData.winnerLinks
+  let winnerLinks = fullData.winnerLinks
         
-        const compHeight = parent.node().getBoundingClientRect().height
-        const compWidth = parent.node().getBoundingClientRect().width
+  // Compute dimensions of SVG
+  const compHeight = parent.node().getBoundingClientRect().height
+  const compWidth = parent.node().getBoundingClientRect().width
   const chart = parent.selectAll('.mainChart').data([null])
         .join('g')
         .attr('class', 'mainChart')
 
+  // Adding more event listeners just slows down the program unnecessarily - none added here
 
-       
-        /*
-        const mouseoverNode = (event) => {
-            setSelectedNode(event.target.id, fullData)
-        }
-        
-        const mouseoutNode = (event) => {
-            setSelectedNode(null, fullData)
-        }
-            */
+  // Append links
   const links = chart.selectAll('line').data(winnerLinks, d=> d.source.id + "-" + d.target.id)
         .join('line')
         .attr('opacity', d=> {
@@ -272,10 +206,7 @@ export function updateForceDiagram(parent, props) {
         const nodes = chart.selectAll('circle').data(winnerNodes, d=> d.id)
             .join('circle')
               .attr('stroke', d=> {
-                if(d.id == getHoveredNode()) {
-                  console.log(d.id)
-                  console.log(colourValue(d))
-                  return('white')}
+                if(d.id == getHoveredNode()) { return('white') }
                 if (d.id == getSelectedNode() && getSelectedNode() != null) {return('aqua')}
                 else {return('black')}
             })
@@ -292,8 +223,6 @@ export function updateForceDiagram(parent, props) {
 
 export function restartForceDiagram(parent, props) {
 
-    console.log("restarting..")
-    //console.log(parent)
     const {fullData, 
       getSelectedNode,
       setSelectedNode,
@@ -305,51 +234,66 @@ export function restartForceDiagram(parent, props) {
     } = props
   
 
-
+    // Get nodes and links from data
     let winnerNodes = fullData.winnerNodes
-          let winnerLinks = fullData.winnerLinks
-          
-          const compHeight = parent.node().getBoundingClientRect().height
-          const compWidth = parent.node().getBoundingClientRect().width
-
-          let maxNodeSize = winnerNodes.map(d=> d.inGraphFollowsNum + d.outGraphFollows).reduce((a, b) => Math.max(a, b), -Infinity);
-          nodeSize = 36/ Math.sqrt(maxNodeSize)
-
-          parent.selectAll('g').remove()
-          parent.selectAll('line').remove()
-          parent.selectAll('circle').remove()
+    let winnerLinks = fullData.winnerLinks
 
 
-          const chart = parent.selectAll('.mainChart').data([null])
-          .join('g')
-          .attr('class', 'mainChart')
-  
-          simulation = null
-          simulation = d3.forceSimulation()
-          simulation
-          .force('link',   d3.forceLink().id(d => d.id))
-          .force('charge', d3.forceManyBody().strength(-70))
-          .force('center', d3.forceCenter(compWidth/2, compHeight/2).strength(1));
+    // Get computed height of parent SVG      
+    const compHeight = parent.node().getBoundingClientRect().height
+    const compWidth = parent.node().getBoundingClientRect().width
 
-        simulation.nodes(winnerNodes);
-        simulation.force('link').links(winnerLinks);
-          
-          const mouseoverNode = (event) => {
-              let currentHover = getHoveredNode()
-            if(currentHover != event.target.id) {
-                setHoveredNode(event.target.id)
-            }
-          }
-          
-          const mouseoutNode = (event) => {
-              setHoveredNode(null)
-          }
+      let maxNodeSize = winnerNodes.map(d=> d.inGraphFollowsNum + d.outGraphFollows).reduce((a, b) => Math.max(a, b), -Infinity);
+      nodeSize = 36/ Math.sqrt(maxNodeSize)
 
-          const clickNode = (event) => {
-            setSelectedNode(event.target.id)
-            //console.log(event.target.id)
-          }
+      // Delete everything from the SVG and start everything again
+      parent.selectAll('g').remove()
+      parent.selectAll('line').remove()
+      parent.selectAll('circle').remove()
+
+
+      const chart = parent.selectAll('.mainChart').data([null])
+      .join('g')
+      .attr('class', 'mainChart')
+
+      // Restart simulation and pray that JavaScript's garbage collector does its job.
+      simulation = null
+      simulation = d3.forceSimulation()
+      // Set up new simulation
+      simulation
+      .force('link',   d3.forceLink().id(d => d.id))
+      .force('charge', d3.forceManyBody().strength(-70))
+      .force('center', d3.forceCenter(compWidth/2, compHeight/2).strength(1));
+
+      simulation.nodes(winnerNodes);
+      simulation.force('link').links(winnerLinks);
       
+      // event listeners need to be created again.
+      // Possible performance hit if the original listeners are also still running.
+      const mouseoverNode = (event) => {
+        let currentHover = getHoveredNode()
+        if(currentHover != event.target.id) {
+            setHoveredNode(event.target.id)
+        }
+        d3.select('#tooltip')
+        .style('display', 'block')
+        .style('left', (event.pageX + tooltipPadding) + 'px')   
+        .style('top', (event.pageY + tooltipPadding) + 'px')
+        .html(`
+          <div class="tooltip-title"> User: ${event.target.id}</div>
+        `);
+      }
+      
+      const mouseoutNode = (event) => {
+          setHoveredNode(null)
+          d3.select('#tooltip').style('display', 'none');
+      }
+
+      const clickNode = (event) => {
+        setSelectedNode(event.target.id)
+      }
+      
+    // Append links
     const links = chart.selectAll('line').data(winnerLinks, d=> d.source.id + "-" + d.target.id)
         .join('line')
         .attr('opacity', d=> {
@@ -362,31 +306,30 @@ export function restartForceDiagram(parent, props) {
         })
       
       
-          // Append nodes
-          const nodes = chart.selectAll('circle').data(winnerNodes, d=> d.id)
-            .join('circle')
-            .attr('r', d=> Math.max(Math.sqrt(d.inGraphFollowsNum + d.outGraphFollows) * nodeSize, minimumNodeSize))
-              .attr('fill', d=> {
-                if (d.id == getSelectedNode() && getSelectedNode() != null) {return('aqua')}
-                else {
-                  return(colourScale(colourValue(d)))
-                }
-              })
-              .attr('stroke', d=> {
-                if(d.id == getHoveredNode()) {return('white')}
-                if (d.id == getSelectedNode() && getSelectedNode() != null) {return('aqua')}
-                else {return('black')}
-            })
-              .attr('id', d=>{
-                //console.log(d)
-                return(d.id)})
-              .on('mouseover', mouseoverNode)
-              .on('mouseout', mouseoutNode)
-              .on('click', clickNode)
-              .call(drag(simulation));
+    // Append nodes
+    const nodes = chart.selectAll('circle').data(winnerNodes, d=> d.id)
+      .join('circle')
+      .attr('r', d=> Math.max(Math.sqrt(d.inGraphFollowsNum + d.outGraphFollows) * nodeSize, minimumNodeSize))
+        .attr('fill', d=> {
+          if (d.id == getSelectedNode() && getSelectedNode() != null) {return('aqua')}
+          else {
+            return(colourScale(colourValue(d)))
+          }
+        })
+        .attr('stroke', d=> {
+          if(d.id == getHoveredNode()) {return('white')}
+          if (d.id == getSelectedNode() && getSelectedNode() != null) {return('aqua')}
+          else {return('black')}
+      })
+        .attr('id', d=>{
+          return(d.id)})
+        .on('mouseover', mouseoverNode)
+        .on('mouseout', mouseoutNode)
+        .on('click', clickNode)
+        .call(drag(simulation));
   
 
-              // Update positions
+        // Update positions
         simulation.on('tick', () => {
           links
               .attr('x1', d => d.source.x)
@@ -398,11 +341,14 @@ export function restartForceDiagram(parent, props) {
               .attr('cy', d => d.y);
         });
 
+        // Zoom
         parent.call(d3.zoom()
         .scaleExtent([1, 8])
         .translateExtent([[0, 0], [compWidth, compHeight]])
         .on('zoom', event => chart.attr('transform', event.transform)));
 
+
+        // Append legend.
         parent.call(colourbar, {
           colourScale,
           nTicks: 4,

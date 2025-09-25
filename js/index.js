@@ -7,45 +7,28 @@ let dataSize = 100
 let winnerBool = true
 
 
-/*
-loadAndProcessData(500, true).then((fullData) => {
-    console.log(fullData)
-    for (let node in fullData.winnerNodes) {
-        combinedData.push(fullData.winnerNodes[node])
-    }
-
-
-loadAndProcessData(500, false).then((fullData) => {
-    for (let node in fullData.winnerNodes) {
-        combinedData.push(fullData.winnerNodes[node])
-    }
-*/
-
-
 const colourValue = (d) => {
     return(d.inGraphFollowsNum + d.outGraphFollows)
 }
 let colourScale = null
 
+
+// Manages the node that the mouse is hovering over
 let hoveredNode = null
 let setHoveredNode = (val) => {
     hoveredNode = val
-    console.log(hoveredNode)
     updateVis()
 }
 
 let getHoveredNode = () => {
-    //console.log(hoveredNode)
     return(hoveredNode)
 }
 
-
+// Manages the node that the user has clicked and selected.
 let selectedNode = null
 let setSelectedNode = (val) => {
     selectedNode = val
-    console.log(selectedNode)
     updateVis()
-    //svg.call(updateForceDiagram, {selectedNode})
 }
 
 let getSelectedNode = () => {
@@ -54,7 +37,6 @@ let getSelectedNode = () => {
 
 
 
-// TODO: This needs to be in a different file.
 const svg1 = d3.select('#svg1');
 const svg2 = d3.select('#svg2');
 
@@ -112,6 +94,8 @@ const updateVis = () => {
     )
 }
 
+
+// This is run when there are any changes to the dataset being displayed.
 const restartVis = () => {
     loadAndProcessData(dataSize, winnerBool).then(fullData => {
         data = fullData
@@ -135,16 +119,16 @@ const restartVis = () => {
     )
 }
 
-
+// Manages the slider input
 let slider = document.getElementById("dataSlider");
 
-//console.log(slider)
 slider.oninput = () => {
-    console.log(+slider.value)
     dataSize = +slider.value
+    document.getElementById("nodeCount").innerHTML = slider.value
     restartVis()
 } 
 
+// Manages the dropdown menu
 const dataChangeFunc = (event) => {
     let dataSelection = event.target.value
     if (dataSelection == 'winner') {

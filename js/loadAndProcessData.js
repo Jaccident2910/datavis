@@ -1,3 +1,6 @@
+// Dynamic pre-processing of data
+// Cuts down the size of the dataset to the number shown in the slider.
+
 const reduceData = (theData, maxSize, winnerBool) => {
     let newData = {}
     let size = 0
@@ -11,15 +14,12 @@ const reduceData = (theData, maxSize, winnerBool) => {
     }
 
     sortedData = unsortedData.sort((a,b) => getSortVal(b) - getSortVal(a) )
-    console.log("Sorted Data: ")
-    console.log(sortedData)
     }
     else {
         sortedData = unsortedData
     }
 
     for( const item in sortedData ) {
-        //console.log(item)
         const [key, value] = sortedData[item]
         if(size < maxSize) {
             newData[key] = value
@@ -45,12 +45,8 @@ const reduceData = (theData, maxSize, winnerBool) => {
     return(newData)
 }
 
+// Cut down the list of who each user follows to match the followers dictionary
 const reduceFollows = (followsData, newData, dataName) => {
-    console.log("Checking data at start")
-    console.log(dataName)
-    console.log(followsData)
-    console.log(Object.keys(followsData).length)
-    console.log(newData)
     const linkTest = (item) => {
         return(item in newData)
     }
@@ -95,11 +91,11 @@ export const loadAndProcessData = (maxSize=500, winnerBool = true) =>
         d3.json('./data/winners_following.json')
       ])
       .then(([winnerData, earlybirdData, earlybirdFollows, winnerFollows]) => {
-        console.log(winnerFollows)
-        console.log(Object.keys(winnerFollows).length)
         if(maxSize > 500) { maxSize = 500 }
         if (winnerBool) {
         winnerData = reduceData(winnerData, maxSize, winnerBool)
+        // converts the data into the format that the force diagram uses.
+        // Nodes holds data about the user, Links holds the link data
         let winnerNodes = []
         let winnerLinks = []
         for( const [key, value] of Object.entries(winnerData) ) {
@@ -128,17 +124,12 @@ export const loadAndProcessData = (maxSize=500, winnerBool = true) =>
                 earlyLinks.push(newLinkObj)
             }
         }
-
-        /*
-        console.log("winnerNodes:")
-        console.log(earlyNodes)
-        console.log("winnerLinks:")
-        console.log(earlyLinks) */
         
         // Return the combined data
         return ({"winnerNodes": earlyNodes, "winnerLinks": earlyLinks, 
             "winnerFollows": reduceFollows(winnerFollows, earlybirdData, "winnerFollows"), "earlybirdFollows": reduceFollows(earlybirdFollows, earlybirdData, "winnerFollows"),
-      // In hindsight I should have just named these loadedNodes and loadedLinks.
+        // In hindsight I should have just named these loadedNodes and loadedLinks.
+        // Oh well.
         })
         }
       });

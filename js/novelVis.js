@@ -2,14 +2,13 @@ import barChart from "./barChart.js"
 
 let activeUser = null
 
-let circleRadius = 140
+let circleRadius = 150
 let legsLength = 2 // multiplier
 
 const tooltipPadding = 15;
 
 export function initNovelVis(parent, props) {
 
-    //console.log(parent)
     const {fullData, 
         getSelectedNode,
       setSelectedNode,
@@ -32,17 +31,14 @@ export function initNovelVis(parent, props) {
     .attr('class', 'centreCircle')
     .attr('transform', `translate(${compWidth/2}, ${compHeight/2})`)
     .attr('r', circleRadius)
-    .attr('fill', 'lightgray')
-    .attr('stroke', 'red')
 
-    //console.log(fullData)
 
     const centreData = chart.selectAll('.centreData').data([null])
         .join('g')
         .attr('class', 'centreData')
         .attr('transform', `translate(${compWidth/2}, ${compHeight/2})`)
         .append('text')
-        .text('Select a user to begin.')
+        .text('Click on a user to begin.')
         .attr('text-anchor', 'middle')
 }
 
@@ -90,14 +86,12 @@ export function updateNovelVis(parent, props) {
         }}
         
         const mouseoutNode = (event) => {
-            console.log("Mouse out")
             setHoveredNode(null)
             d3.select('#tooltip').style('display', 'none');
         }
 
         const clickNode = (event) => {
           setSelectedNode(event.target.id)
-          //console.log(event.target.id)
           d3.select('#tooltip').style('display', 'none');
         }
 
@@ -111,7 +105,7 @@ export function updateNovelVis(parent, props) {
     const centreData = chart.selectAll('.centreData').data([null])
     .join('g')
     .attr('class', 'centreData')
-    .attr('transform', `translate(${compWidth/2 - centreWidth/2}, ${compHeight/2 - centreHeight/2})`)
+    .attr('transform', `translate(${compWidth/2 - centreWidth/2 - 10}, ${compHeight/2 - centreHeight/2})`)
 
 
 
@@ -119,20 +113,8 @@ export function updateNovelVis(parent, props) {
 
     let activeUserData = fullData.winnerNodes.find(d=> d.id == activeUser)
 
-    //console.log(activeUserData)
-
-    /* OLD: Display text of user
-    
-    centreData.append('text')
-    .text("Out of graph followers: " + activeUserData.outGraphFollows)
-    .attr('text-anchor', 'middle')
-    .attr('transform', `translate(0, ${20})`)
-
-    */
-
-    // NEW: Bar chart of followers and following
-    // It would've been nice to have this in a different file, but oh well
-    if (typeof(activeUserData) != "undefined") {
+    // Bar chart of followers and following
+    if (typeof(activeUserData) != "undefined" && activeUser != null) {
     
         centreData.append('text')
         .text("User: " + activeUser)
@@ -172,15 +154,12 @@ export function updateNovelVis(parent, props) {
 
     let activeInGraphFollows = []
 
-    //console.log(fullData.winnerLinks)
     for (let linkIndex in fullData.winnerLinks) {
         let link = fullData.winnerLinks[linkIndex]
-        //console.log(link)
         if (link.source.id == activeUser) {
             activeInGraphFollows.push(link.target.id)
         }
     }
-    console.log(activeInGraphFollows)
 
     // display legs
 
@@ -192,14 +171,13 @@ export function updateNovelVis(parent, props) {
 
     for (let legIndex= 0; legIndex < activeInGraphFollows.length; legIndex++) {
         let leg = activeInGraphFollows[legIndex]
-        //console.log("leg: " + leg)
         let sine = circleRadius * Math.sin(legIndex * angleDiff)
         let cosine = circleRadius * Math.cos(legIndex * angleDiff)
 
-        //find leg object:
+        //find leg data:
         let legData = fullData.winnerNodes.find(d=> d.id == leg)
 
-        //console.log(activeInGraphFollows.length)
+
         // start at vertical
         legsGroup.append('line')
         .attr('x1', compWidth/2 + (cosine))
@@ -209,8 +187,6 @@ export function updateNovelVis(parent, props) {
         .attr('stroke', colourScale(colourValue(legData)) )
         .attr('stroke-width', (d) => {
             if (leg == getHoveredNode()) {
-                console.log("Hovered Node")
-                console.log(getHoveredNode())
                 return(strokeScale(colourValue(legData)) + 4)
             }
             else {
@@ -225,6 +201,7 @@ export function updateNovelVis(parent, props) {
     }
 }
 else {
+    // If the user is no longer in the current data context, show this:
     const centreData = chart.selectAll('.centreData').data([null])
     .join('g')
     .attr('class', 'centreData')

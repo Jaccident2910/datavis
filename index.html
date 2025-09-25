@@ -6,16 +6,22 @@
     <link rel="stylesheet" href="./css/styles.css">
   </head>
   <body>
-    <svg id="svg1" width="400" height="800"></svg>
-    <svg id="svg2" width="400" height="800"></svg>
-    </br>
+      <h1 class="title">The Early Bird Gets the Worm?</h1>
+      <h2 class="title">A comparison of the earliest and most followed accounts on Bluesky</h2>
+    <div id="viewArea">
+      <div id="svgArea">
+        <svg id="svg1" width="400" height="800"></svg>
+        <svg id="svg2" width="400" height="800"></svg>
+      </div>
+    </div>
+    <p id = "sliderCounter">Currently showing the top <span id="nodeCount">100</span> users:</p>
     <div id="inputArea">
-    <input type="range" min="1" max="500" value="100" class="slider" id="dataSlider">
-    </br>
-    <select id="data-selection">
-      <option value="winner">Most followed users</option>
-      <option value="earlybird">Earliest users</option>
-    </select>
+      <input type="range" min="1" max="500" value="100" class="slider" id="dataSlider">
+      </br>
+      <select id="data-selection">
+        <option value="winner">Most followed users</option>
+        <option value="earlybird">Earliest users</option>
+      </select>
     </div>
 
     <div id="tooltip"></div>

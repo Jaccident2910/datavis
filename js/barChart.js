@@ -1,41 +1,29 @@
 const tooltipPadding = 15;
 
 function getActiveUserFromData(d, activeUser) {
-  console.log(d.label)
   // This function is a mess as the followers and following data are slightly different.
   if (d.label == "Followers") {
   
-  console.log(d)
   let keysArr = Object.keys(d).map((key) => [key, d[key]]);
-  console.log(keysArr)
-  console.log(activeUser)
+  // Find correct user in array
   let [foundKey, foundObj] = keysArr.find((item) => { 
-    //console.log(item)
+    //Messiness that comes from the object conversion turning the key and other data into array items
     if(typeof item[1] != 'object') { 
-      console.log("item[1] not an object")
       return(false)
     }
     else if (!("id" in item[1])) {
-      console.log("obj has no id")
       return(false)
     }
     else {
       return(item[1].id == activeUser )
     }})
-  console.log("Found item!")
-  console.log(foundObj)
   return(foundObj)
   }
 
 
   else if (d.label == "Following") {
-  console.log(d)
-  console.log(Object.keys(d).length)
-  console.log("activeUser")
-  console.log(activeUser)
-  console.log(d[+activeUser])
+  // This is significantly less complicated.
   return(d[+activeUser])
-  
   }}
 
 
@@ -57,10 +45,9 @@ export default function barChart(parent, props) {
     const xTickLabels = 5
 
     let activeUser = getSelectedNode()
-    console.log("Got active user")
-    console.log(activeUser)
+     // Create an array, data, where data[0] contains the main data
+     // and data[1] contains the following data
     let activeUserData = fullData.winnerNodes.find(d=> d.id == activeUser)
-    //console.log(fullData)
     const data = [fullData.winnerNodes]
     if(winnerBool) {
         data.push(fullData.winnerFollows)
@@ -68,16 +55,15 @@ export default function barChart(parent, props) {
     else {
         data.push(fullData.earlybirdFollows)
     }
-    //console.log(data)
 
-    // I am going to do a veyr hacky implementation of stacked bar charts, because the data does not lend itself
-    // to a stack generator.
-    // Previously I have had two items in an array, one representing 
-
-
+   
+    // Labelling each part is useful
     data[0].label = "Followers"
     data[1].label = "Following"
 
+
+    // Even JavaScript has its limits, I guess
+    // Check if an array has a given item
     const safeArrayMembershipTest = (d) => {
       if ( Array.isArray(d)) {
         return(d.filter((d) => {return(d.id == activeUser)}).length >= 1)
@@ -90,16 +76,8 @@ export default function barChart(parent, props) {
     const xValue = d => {return(d.label)}
 
     const yValue = (d) => {
-      console.log("Getting yValue")
-      console.log(d)
-      console.log(activeUser)
-      console.log(d.label)
       if (activeUser in d || safeArrayMembershipTest(d)) {
         activeUserData = getActiveUserFromData(d, activeUser)
-        console.log("Active user data in yValue: ")
-        console.log(d)
-        console.log(activeUserData)
-        console.log(activeUserData.inGraphFollowsNum + activeUserData.outGraphFollows)
         return([activeUserData.inGraphFollowsNum, activeUserData.outGraphFollows])}
         else {
           console.log("An error occured: User not in data set?")
@@ -112,7 +90,8 @@ export default function barChart(parent, props) {
   const chartEnter = chart
     .enter().append('g')
       .attr('class','barchart')
-      //.attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // This is mostly just from the course materials
 
   // Initialise scales
   const xScale = d3.scaleBand()
@@ -201,6 +180,7 @@ export default function barChart(parent, props) {
       .attr('width', xScale.bandwidth())
       .attr('height', d => innerHeight - yScale(yValue(d)[0]))
       .attr('y', d => yScale(yValue(d)[0]))
+    // Stacked bars!!
     barsEnter.append('rect')
       .attr('class', 'bar2')
       .attr('x', d => xScale(xValue(d)))
@@ -212,21 +192,19 @@ export default function barChart(parent, props) {
     parent.on('mouseover', mouseoverBar)
     .on('mouseleave', mouseleaveBar)
 
-      //.attr('fill', d => colourScale(colourValue(d)))
-  //barsEnter.merge(bars)
 
   // Add legend:
-    const font_size = 7
+    const font_size = 10
     const legendMargin = {
       y1: 5,
       x: 2,
-      y2: 25
+      y2: 30
     }
     const height_adjust = 7.5
 
   let legend = parent.append('g')
   .attr('class', 'legend')
-  .attr('transform', `translate(${width +2}, ${height/2 - 20})`)
+  .attr('transform', `translate(${width-1}, ${height/2 - 20})`)
   
   legend.append('rect')
   .attr('class', 'bar1')
@@ -247,7 +225,7 @@ export default function barChart(parent, props) {
   legend.append('rect')
   .attr('class', 'bar2')
   .attr('x', 5)
-  .attr('y', 25)
+  .attr('y', legendMargin.y2)
   .attr('width', 10)
   .attr('height', 10)
 
